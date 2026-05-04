@@ -1,0 +1,13 @@
+# Paramètres du pipeline (référencés par dvc.yaml)
+train:
+  n_estimators: 300
+  max_depth: 15
+  min_samples_split: 8
+  min_samples_leaf: 4
+  class_weight: balanced
+  random_state: 42
+
+data:
+  raw_filename: WA_Fn-UseC_-HR-Employee-Attrition.csv
+  raw_subdir: data/raw
+  processed_subdir: data/processed

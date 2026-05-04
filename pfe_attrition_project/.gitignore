@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+.venv/
+venv/
+ENV/
+
+# Jupyter / IDE
+.ipynb_checkpoints/
+.idea/
+.vscode/
+
+# ML / runs
+mlruns/
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Modèles et rapports générés (garder la structure avec .gitkeep)
+models/*.pkl
+models/*.json
+models/*.png
+!models/version.txt
+
+# Données traitées locales
+data/processed/*.csv
+data/processed/*.json
+
+# OS
+.DS_Store
+Thumbs.db

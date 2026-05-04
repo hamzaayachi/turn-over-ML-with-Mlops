@@ -1,0 +1,120 @@
+# dvc.yaml - Pipeline DVC pour le projet de prédiction d'attrition
+# Commande d'exécution: dvc repro
+
+stages:
+  # --------------------------------------------------------------------------
+  # STAGE 1: Téléchargement des données
+  # --------------------------------------------------------------------------
+  download_data:
+    cmd: python scripts/download_data.py
+    deps:
+      - scripts/download_data.py
+    outs:
+      - data/raw/WA_Fn-UseC_-HR-Employee-Attrition.csv
+    desc: Téléchargement du dataset IBM HR Analytics
+
+  # --------------------------------------------------------------------------
+  # STAGE 2: Prétraitement des données
+  # --------------------------------------------------------------------------
+  preprocess:
+    cmd: python src/preprocess.py --input data/raw/WA_Fn-UseC_-HR-Employee-Attrition.csv --output data/processed
+    deps:
+      - data/raw/WA_Fn-UseC_-HR-Employee-Attrition.csv
+      - src/preprocess.py
+    outs:
+      - data/processed/train_data.csv
+      - data/processed/test_data.csv
+    metrics:
+      - data/processed/data_stats.json
+    desc: Nettoyage, encodage et normalisation des données
+
+  # --------------------------------------------------------------------------
+  # STAGE 3: Entraînement du modèle
+  # --------------------------------------------------------------------------
+  train:
+    cmd: python src/train.py --train data/processed/train_data.csv --test data/processed/test_data.csv --output models
+    deps:
+      - data/processed/train_data.csv
+      - data/processed/test_data.csv
+      - src/train.py
+    outs:
+      - models/production_model.pkl
+      - models/scaler.pkl
+      - models/feature_columns.pkl
+    metrics:
+      - models/model_metrics.json
+    plots:
+      - models/confusion_matrix.png
+      - models/roc_curve.png
+    desc: Entraînement du modèle Random Forest
+
+  # --------------------------------------------------------------------------
+  # STAGE 4: Évaluation du modèle
+  # --------------------------------------------------------------------------
+  evaluate:
+    cmd: python src/evaluate.py --model models/production_model.pkl --test data/processed/test_data.csv --output reports
+    deps:
+      - models/production_model.pkl
+      - data/processed/test_data.csv
+      - src/evaluate.py
+    metrics:
+      - reports/evaluation_report.json
+    plots:
+      - reports/confusion_matrix.png
+      - reports/roc_curve.png
+      - reports/feature_importance.png
+    desc: Évaluation des performances du modèle
+
+  # --------------------------------------------------------------------------
+  # STAGE 5: Monitoring et tests de qualité
+  # --------------------------------------------------------------------------
+  monitoring:
+    cmd: python monitoring.py --mode once --save-report
+    deps:
+      - data/processed/test_data.csv
+      - models/production_model.pkl
+      - monitoring.py
+    outs:
+      - monitoring_reports/monitoring_summary.json
+    desc: Tests de qualité et détection de dérive
+
+  # --------------------------------------------------------------------------
+  # STAGE 6: Export du modèle pour production
+  # --------------------------------------------------------------------------
+  export:
+    cmd: python src/deploy.py --mode export --input models/production_model.pkl --output production/
+    deps:
+      - models/production_model.pkl
+      - models/scaler.pkl
+      - models/feature_columns.pkl
+      - src/deploy.py
+    outs:
+      - production/production_model.pkl
+      - production/scaler.pkl
+      - production/feature_columns.pkl
+      - production/version.txt
+    desc: Export du modèle pour la production
+
+# --------------------------------------------------------------------------
+# Paramètres du pipeline
+# --------------------------------------------------------------------------
+params:
+  - configs/params.yaml
+
+# --------------------------------------------------------------------------
+# Métriques à afficher dans DVC Studio
+# --------------------------------------------------------------------------
+metrics:
+  - models/model_metrics.json:
+      cache: false
+  - reports/evaluation_report.json:
+      cache: false
+
+# --------------------------------------------------------------------------
+# Graphiques à afficher dans DVC Studio
+# --------------------------------------------------------------------------
+plots:
+  - models/confusion_matrix.png
+  - models/roc_curve.png
+  - reports/feature_importance.png
+  - monitoring_reports/dashboard.html
