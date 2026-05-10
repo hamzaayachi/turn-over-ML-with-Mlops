@@ -43,11 +43,16 @@ except ImportError:
 # CONFIGURATION
 # ============================================================================
 
-DATA_PATH = r"C:\Users\hamza\Desktop\prjet pfe mlops\pfe_attrition_project\data\raw\WA_Fn-UseC_-HR-Employee-Attrition.csv"
-PROCESSED_PATH = "data/processed"
-MODELS_PATH = "models"
-MONITORING_PATH = "monitoring_reports"
-REPORTS_PATH = "reports"
+# Répertoire racine du projet dérivé du fichier courant pour éviter tout chemin absolu.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Tous les chemins sont assemblés avec os.path.join pour rester multi-OS
+# (Windows local, Linux Docker et Streamlit Cloud).
+DATA_PATH = os.path.join(BASE_DIR, "data", "raw", "WA_Fn-UseC_-HR-Employee-Attrition.csv")
+PROCESSED_PATH = os.path.join(BASE_DIR, "data", "processed")
+MODELS_PATH = os.path.join(BASE_DIR, "models")
+MONITORING_PATH = os.path.join(BASE_DIR, "monitoring_reports")
+REPORTS_PATH = os.path.join(BASE_DIR, "reports")
 
 # Création des dossiers
 for path in [MONITORING_PATH, REPORTS_PATH]:
@@ -123,7 +128,7 @@ class AttritionMonitoring:
         
         # Chargement des données de référence
         if reference_data_path is None:
-            reference_data_path = f"{PROCESSED_PATH}/train_data.csv"
+            reference_data_path = os.path.join(PROCESSED_PATH, "train_data.csv")
         
         if os.path.exists(reference_data_path):
             self.reference_data = pd.read_csv(reference_data_path)
@@ -131,7 +136,7 @@ class AttritionMonitoring:
         
         # Chargement du modèle
         if model_path is None:
-            model_path = f"{MODELS_PATH}/production_model.pkl"
+            model_path = os.path.join(MODELS_PATH, "production_model.pkl")
         
         if os.path.exists(model_path):
             with open(model_path, 'rb') as f:
@@ -139,7 +144,7 @@ class AttritionMonitoring:
             print(f"Modele charge: {type(self.model).__name__}")
         
         # Chargement du scaler
-        scaler_path = f"{MODELS_PATH}/scaler.pkl"
+        scaler_path = os.path.join(MODELS_PATH, "scaler.pkl")
         if os.path.exists(scaler_path):
             with open(scaler_path, 'rb') as f:
                 self.scaler = pickle.load(f)
@@ -147,7 +152,7 @@ class AttritionMonitoring:
     def load_current_data(self, current_data_path: str = None) -> pd.DataFrame:
         """Charge les données actuelles."""
         if current_data_path is None:
-            current_data_path = f"{PROCESSED_PATH}/test_data.csv"
+            current_data_path = os.path.join(PROCESSED_PATH, "test_data.csv")
         
         if os.path.exists(current_data_path):
             return pd.read_csv(current_data_path)
@@ -178,7 +183,7 @@ class AttritionMonitoring:
         
         if save_report:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            report_path = f"{MONITORING_PATH}/data_drift_{timestamp}.json"
+            report_path = os.path.join(MONITORING_PATH, f"data_drift_{timestamp}.json")
             with open(report_path, 'w') as f:
                 json.dump({'timestamp': timestamp, 'result': result}, f, indent=2)
         
@@ -218,7 +223,7 @@ class AttritionMonitoring:
         
         if save_report:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            report_path = f"{MONITORING_PATH}/target_drift_{timestamp}.json"
+            report_path = os.path.join(MONITORING_PATH, f"target_drift_{timestamp}.json")
             with open(report_path, 'w') as f:
                 json.dump({
                     'timestamp': timestamp,
@@ -273,7 +278,7 @@ class AttritionMonitoring:
         
         if save_report:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            report_path = f"{MONITORING_PATH}/performance_{timestamp}.json"
+            report_path = os.path.join(MONITORING_PATH, f"performance_{timestamp}.json")
             with open(report_path, 'w') as f:
                 json.dump({'timestamp': timestamp, 'metrics': metrics, 'alerts': alerts}, f, indent=2)
         
@@ -378,11 +383,13 @@ class AttritionMonitoring:
         
         # Sauvegarde
         if save_reports:
-            report_path = f"{MONITORING_PATH}/monitoring_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            report_path = os.path.join(
+                MONITORING_PATH, f"monitoring_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            )
             with open(report_path, 'w') as f:
                 json.dump(result, f, indent=2)
             
-            with open(f"{MONITORING_PATH}/last_status.json", 'w') as f:
+            with open(os.path.join(MONITORING_PATH, "last_status.json"), 'w') as f:
                 json.dump(result, f, indent=2)
         
         print("="*60)
@@ -402,7 +409,7 @@ def generate_monitoring_dashboard():
     """Génère un dashboard HTML."""
     print("Generation du dashboard...")
     
-    status_file = f"{MONITORING_PATH}/last_status.json"
+    status_file = os.path.join(MONITORING_PATH, "last_status.json")
     
     if not os.path.exists(status_file):
         print("Aucun historique. Executez d'abord: python monitoring.py --mode once")
@@ -502,7 +509,7 @@ def generate_monitoring_dashboard():
 </html>
 '''
     
-    dashboard_path = f"{MONITORING_PATH}/dashboard.html"
+    dashboard_path = os.path.join(MONITORING_PATH, "dashboard.html")
     with open(dashboard_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
     

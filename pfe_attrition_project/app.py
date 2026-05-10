@@ -15,6 +15,13 @@ import os
 
 warnings.filterwarnings('ignore')
 
+# Base du projet calculée depuis ce fichier pour rester portable
+# (local Windows/Linux, Streamlit Cloud et conteneur Docker).
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_FILE_PATH = os.path.join(
+    BASE_DIR, "data", "raw", "WA_Fn-UseC_-HR-Employee-Attrition.csv"
+)
+
 # ============================================================================
 # CONFIGURATION DE LA PAGE
 # ============================================================================
@@ -120,12 +127,8 @@ def load_data():
     """
     Charge et prépare les données.
     """
-    # Chemin relatif (recommandé)
-    file_path = "data/raw/WA_Fn-UseC_-HR-Employee-Attrition.csv"
-    
-    # Si le chemin relatif ne fonctionne pas, essayer le chemin absolu
-    if not os.path.exists(file_path):
-        file_path = r"C:\Users\hamza\Desktop\prjet pfe mlops\pfe_attrition_project\data\raw\WA_Fn-UseC_-HR-Employee-Attrition.csv"
+    # Chemin construit de manière robuste depuis la racine du projet.
+    file_path = DATA_FILE_PATH
     
     try:
         df = pd.read_csv(file_path)

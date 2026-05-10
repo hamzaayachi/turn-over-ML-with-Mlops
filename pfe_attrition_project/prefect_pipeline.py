@@ -31,10 +31,14 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 # CONFIGURATION
 # ============================================================================
 
-DATA_PATH = r"C:\Users\hamza\Desktop\prjet pfe mlops\pfe_attrition_project\data\raw\WA_Fn-UseC_-HR-Employee-Attrition.csv"
-PROCESSED_PATH = "data/processed"
-MODELS_PATH = "models"
-REPORTS_PATH = "reports"
+# Répertoire racine du projet basé sur l'emplacement du script.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Chemins robustes multi-environnements (local, Docker, Streamlit Cloud).
+DATA_PATH = os.path.join(BASE_DIR, "data", "raw", "WA_Fn-UseC_-HR-Employee-Attrition.csv")
+PROCESSED_PATH = os.path.join(BASE_DIR, "data", "processed")
+MODELS_PATH = os.path.join(BASE_DIR, "models")
+REPORTS_PATH = os.path.join(BASE_DIR, "reports")
 
 # Création des dossiers
 for path in [PROCESSED_PATH, MODELS_PATH, REPORTS_PATH]:
@@ -169,15 +173,15 @@ def save_processed_data(X_train, X_test, y_train, y_test, feature_columns, scale
     test_df['Attrition'] = y_test.values
     
     # Sauvegarde
-    train_df.to_csv(f"{PROCESSED_PATH}/train_data.csv", index=False)
-    test_df.to_csv(f"{PROCESSED_PATH}/test_data.csv", index=False)
+    train_df.to_csv(os.path.join(PROCESSED_PATH, "train_data.csv"), index=False)
+    test_df.to_csv(os.path.join(PROCESSED_PATH, "test_data.csv"), index=False)
     
     # Sauvegarde du scaler
-    with open(f"{MODELS_PATH}/scaler.pkl", 'wb') as f:
+    with open(os.path.join(MODELS_PATH, "scaler.pkl"), 'wb') as f:
         pickle.dump(scaler, f)
     
     # Sauvegarde des colonnes
-    with open(f"{MODELS_PATH}/feature_columns.pkl", 'wb') as f:
+    with open(os.path.join(MODELS_PATH, "feature_columns.pkl"), 'wb') as f:
         pickle.dump(list(feature_columns), f)
     
     logger.info(f"✅ Données sauvegardées dans {PROCESSED_PATH}")
@@ -263,12 +267,12 @@ def save_model(model: RandomForestClassifier, metrics: Dict) -> str:
     logger.info("💾 Sauvegarde du modèle...")
     
     # Sauvegarde du modèle
-    model_path = f"{MODELS_PATH}/production_model.pkl"
+    model_path = os.path.join(MODELS_PATH, "production_model.pkl")
     with open(model_path, 'wb') as f:
         pickle.dump(model, f)
     
     # Sauvegarde des métriques
-    metrics_path = f"{MODELS_PATH}/model_metrics.json"
+    metrics_path = os.path.join(MODELS_PATH, "model_metrics.json")
     with open(metrics_path, 'w') as f:
         json.dump(metrics, f, indent=2)
     
@@ -280,7 +284,7 @@ ACCURACY={metrics['accuracy']:.4f}
 ROC_AUC={metrics['roc_auc']:.4f}
 STATUS=production
 """
-    with open(f"{MODELS_PATH}/version.txt", 'w') as f:
+    with open(os.path.join(MODELS_PATH, "version.txt"), 'w') as f:
         f.write(version_content)
     
     logger.info(f"✅ Modèle sauvegardé: {model_path}")
@@ -337,7 +341,7 @@ def generate_report(metrics: Dict, model_path: str) -> str:
         'top_features': metrics.get('top_features', [])[:5]
     }
     
-    report_path = f"{REPORTS_PATH}/training_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    report_path = os.path.join(REPORTS_PATH, f"training_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
     
     with open(report_path, 'w') as f:
         json.dump(report, f, indent=2)
@@ -395,11 +399,12 @@ def training_pipeline(force_retrain: bool = False) -> Dict[str, Any]:
     logger.info("="*60)
     
     # Vérifier si un modèle existe déjà
-    existing_model_path = f"{MODELS_PATH}/production_model.pkl"
+    existing_model_path = os.path.join(MODELS_PATH, "production_model.pkl")
     if os.path.exists(existing_model_path) and not force_retrain:
         logger.info("📦 Un modèle existe déjà. Utilisez force_retrain=True pour le remplacer.")
-        if os.path.exists(f"{MODELS_PATH}/model_metrics.json"):
-            with open(f"{MODELS_PATH}/model_metrics.json", 'r') as f:
+        model_metrics_path = os.path.join(MODELS_PATH, "model_metrics.json")
+        if os.path.exists(model_metrics_path):
+            with open(model_metrics_path, 'r') as f:
                 existing_metrics = json.load(f)
             return {
                 'status': 'skipped',
@@ -482,13 +487,13 @@ def prediction_flow(employee_data: Dict) -> Dict:
     
     try:
         # Chargement du modèle et du scaler
-        with open(f"{MODELS_PATH}/production_model.pkl", 'rb') as f:
+        with open(os.path.join(MODELS_PATH, "production_model.pkl"), 'rb') as f:
             model = pickle.load(f)
         
-        with open(f"{MODELS_PATH}/scaler.pkl", 'rb') as f:
+        with open(os.path.join(MODELS_PATH, "scaler.pkl"), 'rb') as f:
             scaler = pickle.load(f)
         
-        with open(f"{MODELS_PATH}/feature_columns.pkl", 'rb') as f:
+        with open(os.path.join(MODELS_PATH, "feature_columns.pkl"), 'rb') as f:
             feature_columns = pickle.load(f)
         
         # Prétraitement
